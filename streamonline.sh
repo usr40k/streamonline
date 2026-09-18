@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 trap cleanup EXIT INT
 function cleanup(){ rm "$sloc/${streamer}prog_state.txt" > /dev/null 2>&1; }
 # detect missing commands
@@ -46,7 +46,7 @@ while getopts "hlqs:S:D:q:c:HR:" flag; do
       mkdir "$HOME/.local/share/systemd/user/"
       
       # create service unit
-      printf "[Unit]\nDescription=\"Execute streamonline and check for $OPTARG\"\n[Service]\nType=oneshot\nKillMode=process\nExecStart=/bin/bash $HOME/.local/bin/streamonline $OPTARG\n[Install]\nWantedBy=streamonline_$OPTARG.timer" > $HOME/.local/share/systemd/user/streamonline_$OPTARG.service
+      printf "[Unit]\nDescription=\"Execute streamonline and check for $OPTARG\"\n[Service]\nType=oneshot\nKillMode=process\nExecStart=/usr/bin/env bash $HOME/.local/bin/streamonline $OPTARG\n[Install]\nWantedBy=streamonline_$OPTARG.timer" > $HOME/.local/share/systemd/user/streamonline_$OPTARG.service
       
       # configure the timer unit
       FIRST_THIRD="[Unit]\nDescription=Run every 15 minutes or at chosen times of day\n[Timer]\nOnCalendar="

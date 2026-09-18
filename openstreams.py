@@ -197,8 +197,8 @@ def update_scripts():
     print("🔄 Updating scripts from GitHub...")
     # Updated paths and files targeted from repository
     urls = {
-        STREAMONLINE_PATH: "https://raw.githubusercontent.com/40476/streamonline/main/streamonline.sh",
-        OPENSTREAMS_PATH: "https://raw.githubusercontent.com/40476/streamonline/main/openstreams.py"
+        STREAMONLINE_PATH: "https://raw.githubusercontent.com/usr40k/streamonline/main/streamonline.sh",
+        OPENSTREAMS_PATH: "https://raw.githubusercontent.com/usr40k/streamonline/main/openstreams.py"
     }
     try:
         for path, url in urls.items():
