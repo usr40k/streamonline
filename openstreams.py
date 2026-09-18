@@ -10,11 +10,17 @@ import select
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Setup Paths
+# Setup Paths & Environment
 HOME = os.path.expanduser("~")
+LOCAL_BIN = os.path.join(HOME, ".local", "bin")
 SLOC = os.path.join(HOME, ".local", "share", "streamonline")
 STREAMER_FILE = os.path.join(SLOC, "openstreams_streamers.txt")
 LOG_FILE = os.path.join(SLOC, "openstreams.txt")
+
+# CRITICAL FOR NIXOS/GUI LAUNCHERS: Force ~/.local/bin into PATH immediately
+if LOCAL_BIN not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = f"{LOCAL_BIN}:{os.environ.get('PATH', '')}"
+
 
 # Ensure directories exist
 os.makedirs(SLOC, exist_ok=True)
@@ -23,9 +29,17 @@ if not os.path.exists(STREAMER_FILE):
         f.write("best\n")
 
 def get_script_path(name):
-    # Updated to look for .py extensions first, falling back to .sh
+    # Search PATH (which now includes ~/.local/bin)
     path = shutil.which(name) or shutil.which(f"{name}.py") or shutil.which(f"{name}.sh")
-    return path if path else os.path.join(HOME, ".local", "bin", f"{name}.py")
+    if path:
+        return path
+    
+    # Fallback to direct check if PATH search somehow fails
+    direct_path = os.path.join(LOCAL_BIN, name)
+    if os.path.exists(direct_path):
+        return direct_path
+        
+    return os.path.join(LOCAL_BIN, f"{name}.py")
 
 STREAMONLINE_PATH = get_script_path("streamonline")
 OPENSTREAMS_PATH = get_script_path("openstreams")
@@ -76,14 +90,24 @@ def check_single_streamer(entry, default_quality):
 
     name = os.path.basename(url.rstrip('/'))
     base_url = os.path.dirname(url) + "/"
-
     try:
         result = subprocess.run(
             [STREAMONLINE_PATH, "-c", name, "-s", base_url],
-            capture_output=True, text=True, timeout=15
+            capture_output=True, text=True, timeout=15,
+            check=True  # Raises an exception if the command returns a non-zero exit code
         )
         output = result.stdout.strip()
-    except Exception:
+        
+    except subprocess.TimeoutExpired:
+        output = f"{name} error: command timed out after 15 seconds"
+        
+    except subprocess.CalledProcessError as e:
+        # Captures errors when the command runs but fails (non-zero exit code)
+        error_msg = e.stderr.strip() if e.stderr else "Unknown error"
+        output = f"{name} error: {error_msg}"
+        
+    except Exception as e:
+        # Captures other unexpected errors (like FileNotFoundError if STREAMONLINE_PATH is wrong)
         output = f"{name} error checking status"
 
     return {"name": name, "url": url, "quality": quality, "output": output}
